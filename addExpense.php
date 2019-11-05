@@ -125,7 +125,7 @@
 		<div class="row">
 			<div class="col-md-4 offset-md-4  col-8 offset-2  text-center mt-5" id="logowanie">
 				<header>
-					<h2 class="p-3">Nowy przychód</h2>
+					<h2 class="p-3">Nowy wydatek</h2>
 				</header>
 				
 				<form id="form" method="post">
