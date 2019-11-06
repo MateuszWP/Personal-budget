@@ -67,34 +67,55 @@
 		$expenseCategoryQuery = $db->query("SELECT SUM(amount), category FROM expenses WHERE userId='$logged_id' && year(date) = '$year' GROUP BY category");
 		$expensesCategory = $expenseCategoryQuery->fetchAll();
 	}
-	else if(isset($_POST["periodOfTime"]) && $_POST["periodOfTime"] == 5)
+	
+	if(isset($_POST['date1']))
 	{
-		if(isset($_POST['date1']))
+		
+	//	$date1 = $_POST['date1'];
+	//	$date2 = $_POST['date2'];
+		
+		$date1 = date('Y-m-d', strtotime($_POST['date1']));
+		$date2 = date('Y-m-d', strtotime($_POST['date2']));
+		
+		
+		if($date1 <= $date2)
 		{
+			$incomeQuery = $db->query("SELECT userId, amount, date, category FROM incomes WHERE userId='$logged_id' && date>='$date1' && date<='$date2' ");
+			$incomes = $incomeQuery->fetchAll();
+
+			$incomeCategoryQuery = $db->query("SELECT SUM(amount), category FROM incomes WHERE userId='$logged_id' && date>='$date1' && date<='$date2' GROUP BY category");
+			$incomesCategory = $incomeCategoryQuery->fetchAll();
 			
-			$date1 = $_POST['date1'];
-			$date2 = $_POST['date2'];
-			
-			$_SESSION['e_date']="Pierwsza data nie powinna być późniejsza od drugiej daty";
-			
-			$date1 = $_POST['date1'];
-			$date2 = $_POST['date2'];
-			
-			echo '<script language="javascript">';
-			echo 'alert("message successfully sent")';
-			echo '</script>';
+			$expenseQuery = $db->query("SELECT userId, amount, date, category FROM expenses WHERE userId='$logged_id' && date>='$date1' && date<='$date2' ");
+			$expenses = $expenseQuery->fetchAll();
+
+			$expenseCategoryQuery = $db->query("SELECT SUM(amount), category FROM expenses WHERE userId='$logged_id' && date>='$date1' && date<='$date2'  GROUP BY category");
+			$expensesCategory = $expenseCategoryQuery->fetchAll();
 			
 		}
-		
-		
-		
-	}
+		else{
+			$_SESSION['e_date']='<span style="color: red;">Pierwsza data nie powinna być późniejsza od drugiej daty</span>';
+		}
 	
+	}
+		
+
 ?>
 
 <?php
  
-	(isset($_POST["periodOfTime"])) ? $option = $_POST["periodOfTime"] : $option=1;
+	if(isset($_POST["periodOfTime"]))
+	{
+		$option = $_POST["periodOfTime"];
+	}
+	else if (isset($_SESSION['e_date']))
+	{
+		$option=5;
+	}
+	else{
+		$option=1;
+	}
+//	(isset($_POST["periodOfTime"])) ? $option = $_POST["periodOfTime"] : $option=1;
  
 ?>
 
@@ -114,8 +135,6 @@
   <meta name="description" content="Manage yours finances by looking at yours incomes and expenses" />
   <meta name="keywords" content="finances, incomes, expenses, saldo, money" />
   <title>Finanse logowanie</title>
-  
- 
   
 </head>
 
@@ -180,9 +199,10 @@
 				</div>
 			</div>
 		</div>
-
+		<?php
+			//echo $_SESSION['e_date'];
+		?>
 		<!--MODAL -->
-
 		<div class="modal" id="customDate">
 		  <div class="modal-dialog">
 			<div class="modal-content">
@@ -193,7 +213,7 @@
 			  </div>
 			  
 			  <div class="modal-body">
-				<form id="form" method="post" action="date.php">
+				<form id="formModal" method="post">
 				
 				  <div class="form-group">
 					<label for="date">Od</label>
@@ -215,13 +235,13 @@
 			  </div>
 			  
 			  <div class="modal-footer">
-				<button type="submit" class="btn btn-primary" data-dismiss="modal" form="form">Akceptuj</button>
+				<button type="submit" class="btn btn-primary" data-dismiss="modal" form="form" id="submitModal">Akceptuj</button>
 			  </div>
 			  
 			</div>
 		  </div>
 		</div>
-		
+				
 		<!-- BILANS-->
 		<header class="text-center">
 			<h1 class="display-4"><strong>BILANS</strong></h1>
@@ -241,15 +261,17 @@
 					</thead>
 					<tbody>
 						<?php
-							$number =1;
-							foreach ($incomesCategory as $income) {
-								echo
-								"<tr>
-									<th scope="."row".">{$number}</th>
-									<td>{$income['SUM(amount)']}</td>
-									<td>{$income['category']}</td>
-								</tr>";
-								$number++;
+							if($option == 2 || $option == 3 || $option == 4 ||($option == 1 && isset($date1))){
+								$number =1;
+								foreach ($incomesCategory as $income) {
+									echo
+									"<tr>
+										<th scope="."row".">{$number}</th>
+										<td>{$income['SUM(amount)']}</td>
+										<td>{$income['category']}</td>
+									</tr>";
+									$number++;
+								}
 							}
 						?>
 					</tbody>
@@ -268,15 +290,18 @@
 					</thead>
 					<tbody>
 						<?php
-							$number =1;
-							foreach ($expensesCategory as $expense) {
-								echo
-								"<tr>
-									<th scope="."row".">{$number}</th>
-									<td>{$expense['SUM(amount)']}</td>
-									<td>{$expense['category']}</td>
-								</tr>";
-								$number++;
+							if($option == 2 || $option == 3 || $option == 4 ||($option == 1 && isset($date1)))
+							{
+								$number =1;
+								foreach ($expensesCategory as $expense) {
+									echo
+									"<tr>
+										<th scope="."row".">{$number}</th>
+										<td>{$expense['SUM(amount)']}</td>
+										<td>{$expense['category']}</td>
+									</tr>";
+									$number++;
+								}
 							}
 						?>
 					</tbody>
@@ -297,16 +322,19 @@
 					</thead>
 					<tbody>
 						<?php
-							$number =1;
-							foreach ($incomes as $income) {
-								echo
-								"<tr>
-									<th scope="."row".">{$number}</th>
-									<td>{$income['amount']}</td>
-									<td>{$income['date']}</td>
-									<td>{$income['category']}</td>
-								</tr>";
-								$number++;
+							if($option == 2 || $option == 3 || $option == 4 ||($option == 1 && isset($date1)))
+							{
+								$number =1;
+								foreach ($incomes as $income) {
+									echo
+									"<tr>
+										<th scope="."row".">{$number}</th>
+										<td>{$income['amount']}</td>
+										<td>{$income['date']}</td>
+										<td>{$income['category']}</td>
+									</tr>";
+									$number++;
+								}
 							}
 						?>
 					</tbody>
@@ -326,17 +354,21 @@
 					</thead>
 					<tbody>
 						<?php
-							$number =1;
-							foreach ($expenses as $expense) {
-								echo
-								"<tr>
-									<th scope="."row".">{$number}</th>
-									<td>{$expense['amount']}</td>
-									<td>{$expense['date']}</td>
-									<td>{$expense['category']}</td>
-								</tr>";
-								$number++;
+							if($option == 2 || $option == 3 || $option == 4 ||($option == 1 && isset($date1)))
+							{
+								$number =1;
+								foreach ($expenses as $expense) {
+									echo
+									"<tr>
+										<th scope="."row".">{$number}</th>
+										<td>{$expense['amount']}</td>
+										<td>{$expense['date']}</td>
+										<td>{$expense['category']}</td>
+									</tr>";
+									$number++;
+								}
 							}
+							
 						?>
 					</tbody>
 				</table>
@@ -358,6 +390,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
+	
+
   <script>
     // Get the current year for the copyright
     $('#year').text(new Date().getFullYear());
@@ -365,6 +399,11 @@
 	$(document).ready(function() {
 		var selectedOption = $("#selectDate").children("option:selected").val();
 		if(selectedOption == 5)
+		{
+			$modal = $('#customDate');
+			$modal.modal('show');
+		}
+		if(selectedOption == "fail")
 		{
 			$modal = $('#customDate');
 			$modal.modal('show');
@@ -386,6 +425,12 @@
 		$('#date2').val(year+"-"+month+"-"+day);
 		
 	})
+	
+	$(document).ready(function() {
+			$("#submitModal").click(function() {
+				$("#formModal").submit();
+			});
+    });
 	
   </script>
 </body>
